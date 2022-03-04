@@ -14,6 +14,7 @@
 // ==OpenUserJS==
 // @author mklein
 // ==/OpenUserJS==
+var btargetsFound;
 
 this.$ = this.jQuery = jQuery.noConflict(true);
 
@@ -23,10 +24,11 @@ watchForElements(queryAccountId, "accountId", function (element) {
   redactPattern(accountId); // Redact by account ID
   redactPattern("arn:aws"); // Redact all ARNs
   redactPattern("Account:"); // Redact trusted accounts on IAM roles list view
-  
+
+
   const accInheader = accountId.substring(0,4) + "-" + accountId.substring(4,8) + "-" + accountId.substring(8);
   redactPattern(accInheader); // the banner, where account number is hyphenated 1234-5678-9876 format
-  
+
 });
 
 /**
@@ -58,9 +60,9 @@ function redactPattern(pattern) {
 function replaceByRedactedLink(node) {
   const redactedLink = $("<a>", {
     href: "#",
-    style: "color: red;",
-    text: "[REDACTED]",
-    title: "Click to copy to clipboard",
+    style: "color: inherit;",
+    text: "[🔒🔒🔒🔒🔒]",
+    title: ""+node.data,
     click: function (event) {
       event.preventDefault();
       copyToClipboard(node.textContent);
@@ -75,13 +77,13 @@ function replaceByRedactedLink(node) {
  * Copy "data" to clipboard
  */
 function copyToClipboard(data) {
-  
+
   (async()=>
   {
       await navigator.clipboard.writeText(data.trim());
       alert("Copied to clipboard!");
   })();
-  
+
   // Fixed error regarding document not in focus.
 }
 
@@ -100,7 +102,7 @@ function getTextElementsMatchingPattern(pattern) {
     .find("*")
     .contents()
     .filter(function () {
-      return this.nodeType === 3 && this.textContent.includes(pattern);
+      return this.nodeType === 3 && (this.textContent.includes(pattern) || this.textContent.match(new RegExp(pattern)));
     });
 }
 
@@ -114,7 +116,7 @@ function watchForElements(queryFn, pattern, actionFunction, bWaitOnce) {
   if (targetNodes && targetNodes.length > 0) {
     btargetsFound = true;
 
-    /*--- 
+    /*---
     	Found target node(s).  Go through each and act if they
       are new.
     */
@@ -160,3 +162,7 @@ function watchForElements(queryFn, pattern, actionFunction, bWaitOnce) {
 
   watchForElements.controlObj = controlObj;
 }
+
+redactPattern("arn:aws");
+redactPattern("Account");
+redactPattern("[0-9]{4}\-[0-9]{4}\-[0-9]{4}");
